@@ -17,9 +17,9 @@ Live, always-correct contract: **`GET /docs`** (Swagger UI) and **`GET /docs/jso
 ## Quick start for an integrating agent
 
 ```bash
-# 1. log in (demo users share DEMO_PASSWORD; ask the backend owner, never hardcode it in frontend code)
+# 1. log in (all demo users share the password in4matics-must-win)
 curl -s -X POST $API/v1/auth/login -H 'content-type: application/json' \
-  -d '{"username":"tom","password":"<DEMO_PASSWORD>"}'
+  -d '{"username":"tom","password":"in4matics-must-win"}'
 # -> { "token": "eyJ...", "tokenType": "Bearer", "expiresIn": 3600, "user": { "sub": "tom", "role": "klant", "klantId": "K-2024-0417" } }
 
 # 2. call anything with the bearer token
@@ -110,7 +110,7 @@ Always `{ "error": "<code>", ... }`: `400 validation_error` (with `issues`), `40
 
 ## Rules for agents integrating with this API
 
-1. **Never put `DEMO_PASSWORD`, `JWT_SECRET` or any token in committed code or a Lovable frontend bundle.** The user types the password at login; keep the token in memory or `sessionStorage`.
+1. The demo password `in4matics-must-win` may be hardcoded in frontends for the PoC. **Never** hardcode or commit `JWT_SECRET` or a token; keep tokens in memory or `sessionStorage`.
 2. Don't ask for new "god-mode" endpoints to work around roles. If your app needs data it can't get, add a scoped endpoint here.
 3. Keep the Dutch field names (`bron`, `gewicht`, `fase`, …). They match the types in the tech doc, so the frontend can reuse `src/types.ts`.
 4. The score is deterministic and computed **here**. Don't let an LLM decide scores or phases.
@@ -123,14 +123,13 @@ Stack: Node ≥ 22, TypeScript, Fastify 5, Zod 3 (validation + OpenAPI via `fast
 
 ```bash
 pnpm install
-cp .env.example .env   # fill JWT_SECRET (≥32 chars) and DEMO_PASSWORD (≥12 chars)
 pnpm dev               # http://127.0.0.1:3000, docs at /docs
 pnpm typecheck
 ```
 
 ```
 src/
-  config.ts        env parsing; refuses to start with weak/missing secrets
+  config.ts        env parsing + defaults; refuses to start with weak secrets
   domain.ts        types, score engine (berekenScore), playbook filter
   seed.ts          mock customers, accounts, transactions, Doccle docs, signals, playbook
   store.ts         in-memory state + demo clock + audit log
@@ -146,6 +145,6 @@ Adding an endpoint: put it in the right `routes/*.ts`, give it a Zod `schema` (`
 Any container host works (Railway, Render, Fly.io, Cloud Run). There's no build step and no database.
 
 - `Dockerfile` runs as a non-root user and listens on `0.0.0.0:$PORT` with `TRUST_PROXY=true`.
-- Set env vars on the host: `JWT_SECRET`, `DEMO_PASSWORD`, `DEMO_MODE`, `CORS_ORIGINS` (include your Lovable preview + published origins). Most hosts inject `PORT` themselves.
+- Set env vars on the host: `JWT_SECRET` (recommended, else tokens reset on each restart), `DEMO_MODE`, `CORS_ORIGINS` (include your Lovable preview + published origins). Most hosts inject `PORT` themselves.
 - Without Docker (e.g. Railway/Render Node runtime): build `pnpm install`, start `pnpm start`, set `HOST=0.0.0.0` and `TRUST_PROXY=true`.
 - It runs as a single instance: state is in memory, so don't scale it horizontally.

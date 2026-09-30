@@ -12,26 +12,21 @@ Requires Node ≥ 22 and pnpm.
 
 ```bash
 pnpm install
-cp .env.example .env   # set JWT_SECRET (≥32 chars) and DEMO_PASSWORD (≥12 chars)
 pnpm dev               # http://127.0.0.1:3000
 ```
 
-Generate a secret:
-
-```bash
-node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
-```
+No configuration is required. Optionally copy `.env.example` to `.env` to override defaults. Set a fixed `JWT_SECRET` if tokens should survive restarts.
 
 ## Try it
 
 ```bash
 TOKEN=$(curl -s -X POST localhost:3000/v1/auth/login -H 'content-type: application/json' \
-  -d '{"username":"tom","password":"<DEMO_PASSWORD>"}' | node -pe 'JSON.parse(require("fs").readFileSync(0)).token')
+  -d '{"username":"tom","password":"in4matics-must-win"}' | node -pe 'JSON.parse(require("fs").readFileSync(0)).token')
 
 curl -s localhost:3000/v1/klanten/K-2024-0417/momenten -H "authorization: Bearer $TOKEN"
 ```
 
-Demo users: `tom`, `lien`, `sarah` (customers), `adviseur` (backoffice) and `ingest` (signal sources). They all use `DEMO_PASSWORD`.
+Demo users: `tom`, `lien`, `sarah` (customers), `adviseur` (backoffice) and `ingest` (signal sources). They all use the password `in4matics-must-win` (override with `DEMO_PASSWORD`).
 
 ## Demo flow
 
@@ -46,11 +41,11 @@ Log in as `adviseur` and call `POST /v1/demo/volgende` repeatedly. Tom en Lien's
 - Helmet security headers, CORS allowlist, no stack traces in responses
 - Consent enforced at ingestion and in scoring; sensitive signals are hidden from customers
 - Audit log of personal-data reads and all writes (`GET /v1/audit`)
-- Refuses to start with missing or weak secrets
+- Refuses to start with weak secrets; a random JWT secret is generated if none is set
 
 ## Deploy
 
-No build step and no database. Deploy the `Dockerfile` to any container host (Railway, Render, Fly.io, Cloud Run), or use a Node runtime with `pnpm install` / `pnpm start`. Set `JWT_SECRET`, `DEMO_PASSWORD`, `DEMO_MODE`, `CORS_ORIGINS`, `HOST=0.0.0.0` and `TRUST_PROXY=true`. State lives in memory, so run a single instance.
+No build step and no database. Deploy the `Dockerfile` to any container host (Railway, Render, Fly.io, Cloud Run), or use a Node runtime with `pnpm install` / `pnpm start`. Set `JWT_SECRET` (recommended), `DEMO_MODE`, `CORS_ORIGINS`, `HOST=0.0.0.0` and `TRUST_PROXY=true`. State lives in memory, so run a single instance.
 
 ## Stack
 
