@@ -28,7 +28,9 @@ export async function buildApp() {
     contentSecurityPolicy: { directives: { 'script-src': ["'self'", "'unsafe-inline'"], 'style-src': ["'self'", "'unsafe-inline'"] } },
   });
   await app.register(cors, { origin: config.corsOrigins, methods: ['GET', 'POST', 'PUT', 'DELETE'] });
-  await app.register(rateLimit, { max: 300, timeWindow: '1 minute' });
+  // In the demo one browser runs every part (app, backoffice, chat, showcase tour), each polling every ~1.5 s from
+  // the same IP, so the per-IP budget is higher there. Login keeps its own 5/min limit.
+  await app.register(rateLimit, { max: config.DEMO_MODE ? 1200 : 300, timeWindow: '1 minute' });
   await app.register(jwt, {
     secret: config.JWT_SECRET,
     sign: { algorithm: 'HS256', expiresIn: '1h', iss: 'kbc-momentum' },
