@@ -37,7 +37,7 @@ export const PRODUCT_NAMEN: Record<string, string> = {
   SPAARREKENING: 'KBC-Spaarrekening',
   HUURWAARBORG: 'Huurwaarborg',
   WOONKREDIET: 'Woonkrediet',
-  WOONVERZEKERING: 'Woonverzekering (huurder)',
+  WOONVERZEKERING: 'Woonverzekering',
   AUTOLENING_ELEKTRISCH: 'Autolening elektrische wagen',
   AUTOVERZEKERING: 'Autoverzekering elektrische wagen',
   HOSPITALISATIE: 'Hospitalisatieverzekering',
@@ -80,8 +80,8 @@ export function seed() {
       id: TOM,
       naam: 'Tom en Lien',
       toestemming: { EIGEN_AI: true, DOCCLE: true, GEOFENCE: true, APP: true, REKENING: true },
-      producten: ['ZICHTREKENING', 'SPAARREKENING', 'HUURWAARBORG', 'WOONVERZEKERING', 'AUTOLENING_ELEKTRISCH', 'AUTOVERZEKERING', 'HOSPITALISATIE', 'FAMILIALE'],
-      landschap: { huis: 'kans', auto: 'geregeld', gezin: 'geregeld', bescherming: 'kans', sparen: 'geregeld', gezondheid: 'geregeld', reizen: 'kans', onderneming: 'kans' },
+      producten: ['ZICHTREKENING', 'SPAARREKENING', 'WOONKREDIET', 'WOONVERZEKERING', 'AUTOLENING_ELEKTRISCH', 'AUTOVERZEKERING', 'HOSPITALISATIE', 'FAMILIALE'],
+      landschap: { huis: 'geregeld', auto: 'geregeld', gezin: 'geregeld', bescherming: 'kans', sparen: 'geregeld', gezondheid: 'geregeld', reizen: 'kans', onderneming: 'kans' },
     },
     {
       id: JONAS,
@@ -102,22 +102,17 @@ export function seed() {
   ];
 
   // Scripted demo timeline: a signal only "exists" once the demo clock reaches its week (7, 10, 12 … 20).
-  // Tom en Lien: gezinsuitbreiding 35 -> 94% (s1-s7), huis kopen up to 75% (s8-s12), trouwen up to 52% (s13-s15).
-  // Jonas: zaak uitbreiden up to 91% (j1-j7).
+  // Tom en Lien: gezinsuitbreiding 35 -> 91% (s1-s7, no health signals: those never count), trouwen up to 52% (s13-s15).
+  // Jonas: zaak uitbreiden up to 85% (j1-j7); his own AI shares the moment live in the pitch, which takes him to 93%.
   const signalen: (Signaal & { klantId: string })[] = [
     ...[
       { id: 's1', week: 7, bron: 'EIGEN_AI', moment: 'GEZINSUITBREIDING', gewicht: 0.35, label: 'Vraag aan eigen AI over wat te regelen bij een kindje', gevoelig: false },
-      { id: 's2', week: 10, bron: 'DOCCLE', moment: 'GEZINSUITBREIDING', gewicht: 0.6, label: 'Document van een gynaecoloog ontvangen', gevoelig: true },
-      { id: 's3', week: 12, bron: 'GEOFENCE', moment: 'GEZINSUITBREIDING', gewicht: 0.2, label: '2 bezoeken aan praktijk vroedvrouw', gevoelig: true },
-      { id: 's4', week: 14, bron: 'APP', moment: 'GEZINSUITBREIDING', gewicht: 0.15, label: "Pagina's hospitalisatie en kinderrekening bekeken", gevoelig: false },
-      { id: 's5', week: 16, bron: 'REKENING', moment: 'GEZINSUITBREIDING', gewicht: 0.25, label: '3 aankopen in babyspeciaalzaak', gevoelig: false },
-      { id: 's6', week: 18, bron: 'REKENING', moment: 'GEZINSUITBREIDING', gewicht: 0.45, label: 'Inschrijvingsgeld kinderopvang betaald', gevoelig: false },
-      { id: 's7', week: 20, bron: 'REKENING', moment: 'GEZINSUITBREIDING', gewicht: 0.2, label: 'Prenatale cursus betaald', gevoelig: false },
-      { id: 's8', week: 10, bron: 'APP', moment: 'HUIS_KOPEN', gewicht: 0.25, label: 'Woningen bekeken via Immoscoop in KBC Mobile', gevoelig: false },
-      { id: 's9', week: 14, bron: 'EIGEN_AI', moment: 'HUIS_KOPEN', gewicht: 0.35, label: 'Vraag aan eigen AI over hoeveel ze kunnen lenen voor een woning', gevoelig: false },
-      { id: 's10', week: 16, bron: 'REKENING', moment: 'HUIS_KOPEN', gewicht: 0.2, label: 'Maandelijkse storting op de spaarrekening verdubbeld', gevoelig: false },
-      { id: 's11', week: 18, bron: 'APP', moment: 'HUIS_KOPEN', gewicht: 0.25, label: 'Woonbudget berekend in KBC Mobile', gevoelig: false },
-      { id: 's12', week: 20, bron: 'GEOFENCE', moment: 'HUIS_KOPEN', gewicht: 0.15, label: '2 bezoeken aan open huisdagen', gevoelig: false },
+      { id: 's2', week: 10, bron: 'APP', moment: 'GEZINSUITBREIDING', gewicht: 0.3, label: "Spaarrekening hernoemd naar 'Kleine spruit'", gevoelig: false },
+      { id: 's3', week: 12, bron: 'APP', moment: 'GEZINSUITBREIDING', gewicht: 0.15, label: "Pagina's hospitalisatie en kinderrekening bekeken", gevoelig: false },
+      { id: 's4', week: 14, bron: 'REKENING', moment: 'GEZINSUITBREIDING', gewicht: 0.25, label: '3 aankopen in babyspeciaalzaak', gevoelig: false },
+      { id: 's5', week: 16, bron: 'REKENING', moment: 'GEZINSUITBREIDING', gewicht: 0.45, label: 'Inschrijvingsgeld kinderopvang betaald', gevoelig: false },
+      { id: 's6', week: 18, bron: 'REKENING', moment: 'GEZINSUITBREIDING', gewicht: 0.25, label: 'Kinderwagen gekocht', gevoelig: false },
+      { id: 's7', week: 20, bron: 'REKENING', moment: 'GEZINSUITBREIDING', gewicht: 0.25, label: 'Meubels voor de babykamer gekocht', gevoelig: false },
       { id: 's13', week: 12, bron: 'REKENING', moment: 'TROUWEN', gewicht: 0.3, label: 'Aankoop bij een juwelier', gevoelig: false },
       { id: 's14', week: 16, bron: 'APP', moment: 'TROUWEN', gewicht: 0.15, label: "Pagina's huwelijkscontract en wettelijk samenwonen bekeken", gevoelig: false },
       { id: 's15', week: 18, bron: 'REKENING', moment: 'TROUWEN', gewicht: 0.2, label: 'Voorschot betaald aan een feestzaal', gevoelig: false },
@@ -126,7 +121,6 @@ export function seed() {
       { id: 'j1', week: 7, bron: 'REKENING', moment: 'ZAAK_UITBREIDEN', gewicht: 0.3, label: 'Omzet Stroomvaart BV 3 maanden op rij gestegen (+28%)', gevoelig: false },
       { id: 'j2', week: 10, bron: 'DOCCLE', moment: 'ZAAK_UITBREIDEN', gewicht: 0.35, label: 'Offerte ontvangen van een scheepswerf', gevoelig: false },
       { id: 'j3', week: 12, bron: 'APP', moment: 'ZAAK_UITBREIDEN', gewicht: 0.2, label: "Pagina's investeringskrediet en KBC Innovation Banking bekeken", gevoelig: false },
-      { id: 'j4', week: 14, bron: 'EIGEN_AI', moment: 'ZAAK_UITBREIDEN', gewicht: 0.4, label: 'Vraag aan eigen AI over de financiering van een tweede elektrisch schip', gevoelig: false },
       { id: 'j5', week: 16, bron: 'REKENING', moment: 'ZAAK_UITBREIDEN', gewicht: 0.25, label: 'Innovatiesubsidie van VLAIO ontvangen', gevoelig: false },
       { id: 'j6', week: 18, bron: 'REKENING', moment: 'ZAAK_UITBREIDEN', gewicht: 0.2, label: 'Extra bemanning ingehuurd via een uitzendkantoor', gevoelig: false },
       { id: 'j7', week: 20, bron: 'APP', moment: 'ZAAK_UITBREIDEN', gewicht: 0.3, label: 'Investeringskrediet gesimuleerd in KBC Business', gevoelig: false },
@@ -135,13 +129,11 @@ export function seed() {
 
   const playbooks: Partial<Record<string, PlaybookActie[]>> = {
     GEZINSUITBREIDING: [
-      { id: 'a1', titel: 'Kindje meeverzekeren in hospitalisatie', domein: 'gezondheid', uitvoering: 'STP' },
-      { id: 'a2', titel: 'Familiale verzekering nakijken voor het kind', domein: 'bescherming', uitvoering: 'STP' },
-      { id: 'a3', titel: 'Spaarrekening voor het kind openen', domein: 'sparen', uitvoering: 'STP', kateCoin: { bedrag: 50, voorwaarde: 'rekening geopend en geboorte geregistreerd' } },
-      { id: 'a4', titel: 'Gezinsbudget en ouderschapsverlof simuleren', domein: 'gezin', uitvoering: 'INFO' },
-      { id: 'a5', titel: 'Begunstigden levensverzekering nakijken', domein: 'huis', uitvoering: 'ADVISEUR' },
-      { id: 'a6', titel: 'Groeipakket en geboortepremie: checklist', domein: 'gezin', uitvoering: 'INFO' },
-      { id: 'a7', titel: 'Autolening voor een gezinswagen', domein: 'auto', uitvoering: 'STP', vereistProductNiet: 'AUTOVERZEKERING' },
+      { id: 'a1', titel: 'Schuldsaldo verhogen voor het gezin', domein: 'bescherming', uitvoering: 'STP' },
+      { id: 'a2', titel: 'Kindje meeverzekeren in hospitalisatie', domein: 'gezondheid', uitvoering: 'STP' },
+      { id: 'a3', titel: 'Startbedrag Groeipakket klaarzetten', domein: 'gezin', uitvoering: 'INFO' },
+      { id: 'a4', titel: 'Gezinscheck van de auto: houden of een gezinswagen simuleren', domein: 'auto', uitvoering: 'INFO' },
+      { id: 'a5', titel: "Spaarplan 'Kleine spruit' openen", domein: 'sparen', uitvoering: 'STP', kateCoin: { bedrag: 100, voorwaarde: 'spaarplan geopend en geboorte geregistreerd' } },
     ],
     HUIS_KOPEN: [
       { id: 'h1', titel: 'Woonbudget berekenen: hoeveel kunnen jullie lenen?', domein: 'huis', uitvoering: 'INFO' },
@@ -171,7 +163,7 @@ export function seed() {
 
   const rekeningen: Rekening[] = [
     { id: 'r1', klantId: TOM, iban: 'BE68 7340 1234 5678', type: 'ZICHTREKENING', naam: 'Gezamenlijke rekening', saldo: 4213.57 },
-    { id: 'r2', klantId: TOM, iban: 'BE91 7340 8765 4321', type: 'SPAARREKENING', naam: 'Spaarpot eigen huis', saldo: 38650 },
+    { id: 'r2', klantId: TOM, iban: 'BE91 7340 8765 4321', type: 'SPAARREKENING', naam: 'Spaarrekening', saldo: 38650 },
     { id: 'r3', klantId: JONAS, iban: 'BE12 7350 9876 5432', type: 'ZICHTREKENING', naam: 'Zichtrekening', saldo: 3140.22 },
     { id: 'r4', klantId: JONAS, iban: 'BE45 7350 1111 2222', type: 'ZAKELIJKE_REKENING', naam: 'Stroomvaart BV', saldo: 84310.55 },
   ];
@@ -180,14 +172,14 @@ export function seed() {
     rows.map(([datum, bedrag, tegenpartij, categorie]) => ({ rekeningId, datum, bedrag, tegenpartij, categorie }));
   const transacties: Transactie[] = [
     ...t('r1', [
-      ['2026-07-01', -1050, 'Immo Verhuur Kortrijk', 'HUUR'],
+      ['2026-07-01', -1186, 'KBC Woonkrediet', 'LENING'],
       ['2026-07-03', -389, 'KBC Autolening', 'LENING'],
       ['2026-07-11', -2450, 'Juwelier Vandaele', 'JUWELEN'],
       ['2026-07-14', -54.3, 'Allego laadpunt', 'LADEN'],
       ['2026-07-25', 3450, 'Werkgever NV', 'LOON'],
       ['2026-07-25', 3120, 'Ziekenhuis AZ Groeninge', 'LOON'],
-      ['2026-07-28', -800, 'Spaarpot eigen huis', 'SPAREN'],
-      ['2026-08-01', -1050, 'Immo Verhuur Kortrijk', 'HUUR'],
+      ['2026-07-28', -800, 'Spaarrekening', 'SPAREN'],
+      ['2026-08-01', -1186, 'KBC Woonkrediet', 'LENING'],
       ['2026-08-03', -389, 'KBC Autolening', 'LENING'],
       ['2026-08-03', -42, 'Babyland', 'BABY'],
       ['2026-08-09', -38.4, 'Cambio', 'MOBILITEIT'],
@@ -196,18 +188,20 @@ export function seed() {
       ['2026-08-20', -189.99, 'Baby Dump Kortrijk', 'BABY'],
       ['2026-08-25', 3450, 'Werkgever NV', 'LOON'],
       ['2026-08-25', 3120, 'Ziekenhuis AZ Groeninge', 'LOON'],
-      ['2026-08-28', -1600, 'Spaarpot eigen huis', 'SPAREN'],
-      ['2026-09-01', -1050, 'Immo Verhuur Kortrijk', 'HUUR'],
+      ['2026-08-28', -1600, 'Spaarrekening', 'SPAREN'],
+      ['2026-09-01', -1186, 'KBC Woonkrediet', 'LENING'],
       ['2026-09-02', -150, 'Kinderdagverblijf De Speelboom', 'KINDEROPVANG'],
       ['2026-09-03', -389, 'KBC Autolening', 'LENING'],
       ['2026-09-06', -1500, 'Feestzaal Hof ter Leie', 'FEEST'],
       ['2026-09-10', -24.8, 'NMBS', 'MOBILITEIT'],
+      ['2026-09-13', -649, 'Baby Dump Kortrijk', 'BABY'],
       ['2026-09-16', -95, 'Vroedvrouwenpraktijk Levenslicht', 'CURSUS'],
       ['2026-09-18', -112.34, 'Colruyt', 'BOODSCHAPPEN'],
       ['2026-09-19', -58.1, 'VAB laadkaart', 'LADEN'],
       ['2026-09-25', 3450, 'Werkgever NV', 'LOON'],
       ['2026-09-25', 3120, 'Ziekenhuis AZ Groeninge', 'LOON'],
-      ['2026-09-28', -1600, 'Spaarpot eigen huis', 'SPAREN'],
+      ['2026-09-27', -1240, 'Kidsdepot', 'BABY'],
+      ['2026-09-28', -1600, 'Spaarrekening', 'SPAREN'],
     ]),
     ...t('r2', [
       ['2026-07-28', 800, 'Gezamenlijke rekening', 'SPAREN'],
@@ -257,7 +251,7 @@ export function seed() {
   const documenten: Document[] = [
     { id: 'd1', klantId: TOM, afzender: 'Praktijk Gynaecologie Kortrijk', type: 'afschrift consultatie', datum: '2026-03-12' },
     { id: 'd2', klantId: TOM, afzender: 'Fluvius', type: 'factuur', datum: '2026-09-01' },
-    { id: 'd3', klantId: TOM, afzender: 'Immo Verhuur Kortrijk', type: 'indexatie huurprijs', datum: '2026-06-15' },
+    { id: 'd3', klantId: TOM, afzender: 'Stad Kortrijk', type: 'aanslagbiljet onroerende voorheffing', datum: '2026-06-15' },
     { id: 'd4', klantId: TOM, afzender: 'Notariskantoor Vandenberghe', type: 'afspraakbevestiging', datum: '2026-09-22' },
     { id: 'd5', klantId: JONAS, afzender: 'Scheepswerf De Rupel', type: 'offerte', datum: '2026-05-06' },
     { id: 'd6', klantId: JONAS, afzender: 'VLAIO', type: 'beslissing steunaanvraag', datum: '2026-08-28' },
@@ -268,13 +262,11 @@ export function seed() {
   // Partners the customer is a client of. deelt = the customer lets that partner share data with KBC (active link);
   // otherwise KBC only knows the relation exists (known link), from the account or from use inside KBC Mobile.
   const partnerRelaties: (PartnerRelatie & { klantId: string })[] = [
-    { klantId: TOM, partner: 'immoscoop', herkomst: 'KBC_MOBILE', deelt: true, sinds: '2026-05-18' },
     { klantId: TOM, partner: 'vab', herkomst: 'KBC_MOBILE', deelt: true, sinds: '2025-03-02' },
     { klantId: TOM, partner: 'nmbs', herkomst: 'KBC_MOBILE', deelt: true, sinds: '2024-09-01' },
     { klantId: TOM, partner: 'joyn', herkomst: 'KBC_MOBILE', deelt: true, sinds: '2024-05-22' },
     { klantId: TOM, partner: 'cambio', herkomst: 'REKENING', deelt: false, sinds: '2025-06-10' },
     { klantId: TOM, partner: 'brussels-airport', herkomst: 'REKENING', deelt: false, sinds: '2026-07-02' },
-    { klantId: TOM, partner: 'de-immowinkel', herkomst: 'KBC_MOBILE', deelt: false, sinds: '2026-09-14' },
     { klantId: JONAS, partner: 'billit', herkomst: 'KLANT', deelt: true, sinds: '2022-05-02' },
     { klantId: JONAS, partner: 'encon', herkomst: 'KLANT', deelt: true, sinds: '2025-09-15' },
     { klantId: JONAS, partner: 'kube', herkomst: 'KBC_MOBILE', deelt: true, sinds: '2026-01-20' },

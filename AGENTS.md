@@ -105,7 +105,7 @@ klant sees a privacy-filtered object:
 
 - `fase`: `stil` (<40%) → `info` (≥40%) → `vragen` (≥70%) → `voorstel` (≥90% **and** confirmed).
 - A customer gets `acties` only in `voorstel`. `andereSignalen` is the number of sensitive signals whose labels are hidden; show it as "en andere signalen waarvoor je toestemming gaf".
-- Playbook actions for products the customer already has are filtered out (e.g. `a7` autolening).
+- Playbook actions for products the customer already has are filtered out (`vereistProductNiet`, e.g. `h2` woonkrediet).
 
 ### Ecosystems, partners and clusters
 
@@ -150,17 +150,18 @@ In the backoffice an adviser clicks a `mogelijk` link in the customer's ecosyste
 
 ### Demo profiles and timeline
 
-- **Tom en Lien** (`K-2024-0417`): renting in Kortrijk, expecting a baby, one electric car (loan + insurance, VAB charging card), saving for a house (€38.650) and planning to marry. Partners: Immoscoop, VAB, NMBS, Joyn share data; Cambio, Brussels Airport, De Immowinkel are known.
+- **Tom en Lien** (`K-2024-0417`): own a house in Kortrijk with a KBC home loan, expecting a baby, one electric car (loan + insurance, VAB charging card), a savings buffer (€38.650) and planning to marry. Partners: VAB, NMBS, Joyn share data; Cambio, Brussels Airport are known. No health signal ever counts: the score comes from neutral signals only.
 - **Jonas** (`K-2022-0311`): founder of **Stroomvaart BV**, emission-free inland shipping with electric push boats on green shore power, 6 employees. Business account, investment and energy loans, business insurances. Partners: Billit, Encon, Kube share data; Sweco, NOWJOBS, Go Solid, MoveSmart, Firsty are known. No geofencing consent.
 
 Signals only "exist" once the demo clock reaches their week. The clock starts at 0; each `POST /v1/demo/volgende` jumps to the next demo week (7, 10, 12, 14, 16, 18, 20):
 
 | Week | 7 | 10 | 12 | 14 | 16 | 18 | 20 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Tom en Lien · `GEZINSUITBREIDING` (s1–s7) | 35 | 74 | 79 | 82 | 87 | 93 | **94** |
-| Tom en Lien · `HUIS_KOPEN` (s8–s12) | – | 25 | 25 | 51 | 61 | 71 | **75** |
+| Tom en Lien · `GEZINSUITBREIDING` (s1–s7) | 35 | 55 | 61 | 71 | 84 | 88 | **91** |
 | Tom en Lien · `TROUWEN` (s13–s15) | – | – | 30 | 30 | 41 | 52 | **52** |
-| Jonas · `ZAAK_UITBREIDEN` (j1–j7) | 30 | 55 | 64 | 78 | 84 | 87 | **91** |
+| Jonas · `ZAAK_UITBREIDEN` (j1–j7, no j4) | 30 | 55 | 64 | 64 | 73 | 78 | **85** |
+
+In the pitch Jonas's own AI shares `ZAAK_UITBREIDEN` live (phase `plannend`, weight 0.55), which takes him from 85% to 93%.
 
 `POST /v1/demo/reset` restores all seed data. Frontends should poll `GET K/momenten` (e.g. every 1–2 s) to stay in sync.
 
