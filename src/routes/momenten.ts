@@ -2,6 +2,7 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { authenticate, requireKlantAccess } from '../auth.js';
 import { Bron, MCP_FASE_GEWICHT, MomentId } from '../domain.js';
+import { fouten, Gedeeld, Ingetrokken, Moment, MomentKlant, Momenten, Signaal, Signalen } from '../schemas.js';
 import { store } from '../store.js';
 
 const KlantParams = z.object({ klantId: z.string().max(32) });
@@ -67,6 +68,7 @@ export const momentRoutes: FastifyPluginAsyncZod = async (app) => {
             week: z.number().int().min(0).max(520).optional(),
           })
           .strict(),
+        response: { 201: Signaal, ...fouten(400, 401, 403, 404, 422) },
       },
     },
     async (req, reply) => {
@@ -84,7 +86,10 @@ export const momentRoutes: FastifyPluginAsyncZod = async (app) => {
 
   app.get(
     '/klanten/:klantId/signalen',
-    { preHandler: requireKlantAccess('klant', 'adviseur'), schema: { ...tags('signalen'), params: KlantParams } },
+    {
+      preHandler: requireKlantAccess('klant', 'adviseur'),
+      schema: { ...tags('signalen'), params: KlantParams, response: { 200: Signalen, ...fouten(400, 401, 403, 404) } },
+    },
     async (req) => {
       const signalen = store.signalen(req.params.klantId);
       if (req.user.role !== 'klant') {
@@ -99,13 +104,19 @@ export const momentRoutes: FastifyPluginAsyncZod = async (app) => {
 
   app.get(
     '/klanten/:klantId/momenten',
-    { preHandler: requireKlantAccess('klant', 'adviseur'), schema: { ...tags('momenten'), params: KlantParams } },
+    {
+      preHandler: requireKlantAccess('klant', 'adviseur'),
+      schema: { ...tags('momenten'), params: KlantParams, response: { 200: Momenten, ...fouten(400, 401, 403, 404) } },
+    },
     async (req) => ({ week: store.week, momenten: momentenVoor(req.user.role, req.params.klantId) }),
   );
 
   app.get(
     '/klanten/:klantId/momenten/:moment',
-    { preHandler: requireKlantAccess('klant', 'adviseur'), schema: { ...tags('momenten'), params: MomentParams } },
+    {
+      preHandler: requireKlantAccess('klant', 'adviseur'),
+      schema: { ...tags('momenten'), params: MomentParams, response: { 200: Moment, ...fouten(400, 401, 403, 404) } },
+    },
     async (req, reply) => {
       const m = momentenVoor(req.user.role, req.params.klantId).find((x) => x.moment === req.params.moment);
       return m ?? reply.code(404).send({ error: 'not_found' });
@@ -115,22 +126,29 @@ export const momentRoutes: FastifyPluginAsyncZod = async (app) => {
   // Customer taps "Ja, klopt"
   app.post(
     '/klanten/:klantId/momenten/:moment/bevestig',
-    { preHandler: requireKlantAccess('klant'), schema: { ...tags('momenten'), params: MomentParams } },
+    {
+      preHandler: requireKlantAccess('klant'),
+      schema: { ...tags('momenten'), params: MomentParams, response: { 200: MomentKlant.nullable(), ...fouten(400, 401, 403, 404) } },
+    },
     async (req) => {
       store.bevestig(req.params.klantId, req.params.moment);
       store.log(req.user.sub, 'moment_bevestigd', req.params.klantId, req.params.moment);
-      return momentenVoor('klant', req.params.klantId).find((x) => x.moment === req.params.moment) ?? null;
+      const m = momentenVoor('klant', req.params.klantId).find((x) => x.moment === req.params.moment);
+      return (m as z.infer<typeof MomentKlant> | undefined) ?? null;
     },
   );
 
   // "Niet voor ons" / MCP revoke_moment: wipes the signals of that moment
   app.delete(
     '/klanten/:klantId/momenten/:moment',
-    { preHandler: requireKlantAccess('klant'), schema: { ...tags('momenten'), params: MomentParams } },
+    {
+      preHandler: requireKlantAccess('klant'),
+      schema: { ...tags('momenten'), params: MomentParams, response: { 200: Ingetrokken, ...fouten(400, 401, 403, 404) } },
+    },
     async (req) => {
       const verwijderd = store.revokeMoment(req.params.klantId, req.params.moment);
       store.log(req.user.sub, 'moment_ingetrokken', req.params.klantId, req.params.moment);
-      return { status: 'ingetrokken', verwijderdeSignalen: verwijderd };
+      return { status: 'ingetrokken' as const, verwijderdeSignalen: verwijderd };
     },
   );
 
@@ -149,6 +167,7 @@ export const momentRoutes: FastifyPluginAsyncZod = async (app) => {
             verwachte_maand: z.string().regex(/^\d{4}-\d{2}$/).optional(),
           })
           .strict(),
+        response: { 201: Gedeeld, ...fouten(400, 401, 403, 404, 422) },
       },
     },
     async (req, reply) => {

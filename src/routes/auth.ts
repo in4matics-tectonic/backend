@@ -1,6 +1,7 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { authenticate, verifyLogin } from '../auth.js';
+import { fouten, Login, Me } from '../schemas.js';
 import { store } from '../store.js';
 
 export const authRoutes: FastifyPluginAsyncZod = async (app) => {
@@ -12,6 +13,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
       schema: {
         tags: ['auth'],
         body: z.object({ username: z.string().min(1).max(64), password: z.string().min(1).max(256) }).strict(),
+        response: { 200: Login, ...fouten(400, 401) },
       },
     },
     async (req, reply) => {
@@ -22,9 +24,13 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
       }
       store.log(user.sub, 'login');
       const token = app.jwt.sign(user);
-      return { token, tokenType: 'Bearer', expiresIn: 3600, user };
+      return { token, tokenType: 'Bearer' as const, expiresIn: 3600, user };
     },
   );
 
-  app.get('/me', { onRequest: authenticate, schema: { tags: ['auth'], security: [{ bearer: [] }] } }, async (req) => req.user);
+  app.get(
+    '/me',
+    { onRequest: authenticate, schema: { tags: ['auth'], security: [{ bearer: [] }], response: { 200: Me, ...fouten(401) } } },
+    async (req) => req.user as typeof req.user & { iss: string; iat: number; exp: number },
+  );
 };

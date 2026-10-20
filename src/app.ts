@@ -5,6 +5,7 @@ import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import Fastify, { type FastifyError } from 'fastify';
+import { z } from 'zod';
 import { hasZodFastifySchemaValidationErrors, jsonSchemaTransform, serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import { authenticate, requireRole } from './auth.js';
 import { config } from './config.js';
@@ -13,6 +14,7 @@ import { demoRoutes } from './routes/demo.js';
 import { ecosysteemRoutes } from './routes/ecosystemen.js';
 import { klantRoutes } from './routes/klanten.js';
 import { momentRoutes } from './routes/momenten.js';
+import { AuditRegel, fouten } from './schemas.js';
 import { store } from './store.js';
 
 export async function buildApp() {
@@ -65,8 +67,14 @@ export async function buildApp() {
       await v1.register(momentRoutes);
       await v1.register(ecosysteemRoutes);
       if (config.DEMO_MODE) await v1.register(demoRoutes);
-      v1.get('/audit', { onRequest: authenticate, preHandler: requireRole('adviseur'), schema: { tags: ['audit'], security: [{ bearer: [] }] } }, async () =>
-        store.audit().slice(0, 500),
+      v1.get(
+        '/audit',
+        {
+          onRequest: authenticate,
+          preHandler: requireRole('adviseur'),
+          schema: { tags: ['audit'], security: [{ bearer: [] }], response: { 200: z.array(AuditRegel), ...fouten(401, 403) } },
+        },
+        async () => store.audit().slice(0, 500),
       );
     },
     { prefix: '/v1' },

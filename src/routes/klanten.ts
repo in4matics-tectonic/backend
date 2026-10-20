@@ -3,27 +3,30 @@ import { z } from 'zod';
 import { authenticate, requireKlantAccess, requireRole } from '../auth.js';
 import { Bron } from '../domain.js';
 import { PRODUCTEN } from '../catalogus.js';
+import { Document, fouten, Klant, KlantKort, KlantProduct, Rekening, Toestemming, Transactie } from '../schemas.js';
 import { PRODUCT_CATALOGUS, PRODUCT_NAMEN } from '../seed.js';
 import { store } from '../store.js';
 
 const KlantParams = z.object({ klantId: z.string().max(32) });
 const secured = { security: [{ bearer: [] }], tags: ['klanten'] };
+/** Schema for a GET /klanten/:klantId/... route. */
+const perKlant = <T extends z.ZodTypeAny>(response: T) => ({ ...secured, params: KlantParams, response: { 200: response, ...fouten(400, 401, 403, 404) } });
 
 export const klantRoutes: FastifyPluginAsyncZod = async (app) => {
   app.addHook('onRequest', authenticate);
   const read = requireKlantAccess('klant', 'adviseur');
 
-  app.get('/klanten', { preHandler: requireRole('adviseur'), schema: secured }, async (req) => {
+  app.get('/klanten', { preHandler: requireRole('adviseur'), schema: { ...secured, response: { 200: z.array(KlantKort), ...fouten(401, 403) } } }, async (req) => {
     store.log(req.user.sub, 'list_klanten');
     return store.klanten().map((k) => ({ id: k.id, naam: k.naam, onderneming: k.onderneming?.naam ?? null }));
   });
 
-  app.get('/klanten/:klantId', { preHandler: read, schema: { ...secured, params: KlantParams } }, async (req) => {
+  app.get('/klanten/:klantId', { preHandler: read, schema: perKlant(Klant) }, async (req) => {
     store.log(req.user.sub, 'read_klant', req.params.klantId);
-    return store.klant(req.params.klantId);
+    return store.klant(req.params.klantId)!;
   });
 
-  app.get('/klanten/:klantId/rekeningen', { preHandler: read, schema: { ...secured, params: KlantParams } }, async (req) => {
+  app.get('/klanten/:klantId/rekeningen', { preHandler: read, schema: perKlant(z.array(Rekening)) }, async (req) => {
     store.log(req.user.sub, 'read_rekeningen', req.params.klantId);
     return store.rekeningen(req.params.klantId);
   });
@@ -36,6 +39,7 @@ export const klantRoutes: FastifyPluginAsyncZod = async (app) => {
         ...secured,
         params: KlantParams,
         querystring: z.object({ rekeningId: z.string().max(32).optional(), limit: z.coerce.number().int().min(1).max(200).default(50) }),
+        response: { 200: z.array(Transactie), ...fouten(400, 401, 403, 404) },
       },
     },
     async (req) => {
@@ -44,14 +48,14 @@ export const klantRoutes: FastifyPluginAsyncZod = async (app) => {
     },
   );
 
-  app.get('/klanten/:klantId/producten', { preHandler: read, schema: { ...secured, params: KlantParams } }, async (req) => {
+  app.get('/klanten/:klantId/producten', { preHandler: read, schema: perKlant(z.array(KlantProduct)) }, async (req) => {
     return store.klant(req.params.klantId)!.producten.map((code) => {
       const catalogus = PRODUCTEN.find((p) => p.id === (PRODUCT_CATALOGUS[code] ?? code));
       return { code, naam: PRODUCT_NAMEN[code] ?? catalogus?.naam ?? code, catalogusId: catalogus?.id ?? null, ecosysteem: catalogus?.ecosysteem ?? null };
     });
   });
 
-  app.get('/klanten/:klantId/documenten', { preHandler: read, schema: { ...secured, params: KlantParams } }, async (req) => {
+  app.get('/klanten/:klantId/documenten', { preHandler: read, schema: perKlant(z.array(Document)) }, async (req) => {
     store.log(req.user.sub, 'read_documenten', req.params.klantId);
     return store.documenten(req.params.klantId);
   });
@@ -61,7 +65,7 @@ export const klantRoutes: FastifyPluginAsyncZod = async (app) => {
     '/klanten/:klantId/toestemming',
     {
       preHandler: requireKlantAccess('klant'),
-      schema: { ...secured, params: KlantParams, body: z.record(Bron, z.boolean()) },
+      schema: { ...secured, params: KlantParams, body: z.record(Bron, z.boolean()), response: { 200: Toestemming, ...fouten(400, 401, 403, 404) } },
     },
     async (req) => {
       const klant = store.klant(req.params.klantId)!;

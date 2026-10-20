@@ -184,7 +184,7 @@ src/
   routes/          auth, klanten (customer data), momenten (signals + moments + MCP share), ecosystemen (catalogue, partners, clusters), demo
 ```
 
-Adding an endpoint: put it in the right `routes/*.ts`, give it a Zod `schema` (`params`/`querystring`/`body`, use `.strict()` on bodies) plus `tags` and `security: [{ bearer: [] }]`. Guard it with `requireKlantAccess(...roles)` for anything under `/klanten/:klantId`, or `requireRole(...)` otherwise. Call `store.log(...)` on reads of personal data and on every write. Then run `pnpm typecheck`.
+Adding an endpoint: put it in the right `routes/*.ts`, give it a Zod `schema` (`params`/`querystring`/`body`, use `.strict()` on bodies) plus `tags` and `security: [{ bearer: [] }]`, and a `response` schema from `src/schemas.ts` (with `fouten(...)` for the error codes). Response schemas are enforced on output: fields they don't list are stripped, so update the schema when you change what a route returns. Guard it with `requireKlantAccess(...roles)` for anything under `/klanten/:klantId`, or `requireRole(...)` otherwise. Call `store.log(...)` on reads of personal data and on every write. Then run `pnpm typecheck`.
 
 ## Hosting
 
