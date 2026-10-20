@@ -30,7 +30,7 @@ Demo users: `tom`, `lien`, `jonas` (customers), `adviseur` (backoffice) and `ing
 
 ## Demo flow
 
-Log in as `adviseur` and call `POST /v1/demo/volgende` repeatedly. Tom en Lien's score for `GEZINSUITBREIDING` climbs 35 → 74 → 79 → 82 → 87 → 93 → 94%. Once Tom confirms (`POST /v1/klanten/K-2024-0417/momenten/GEZINSUITBREIDING/bevestig`) the moment moves to `voorstel` and the playbook actions appear. `POST /v1/demo/reset` starts over.
+Log in as `adviseur` and call `POST /v1/demo/volgende` repeatedly (weeks 7, 10, 12 … 20). Tom en Lien's score for `GEZINSUITBREIDING` climbs 35 → 55 → 61 → 71 → 84 → 88 → 91%, from neutral signals only: health data never counts. From 71% the moment is in `vragen` and the app asks. Once Tom confirms (`POST /v1/klanten/K-2024-0417/momenten/GEZINSUITBREIDING/bevestig`) and the score passes 90%, it moves to `voorstel` and the playbook actions appear. Jonas's `ZAAK_UITBREIDEN` ends at 85%; his own AI sharing the moment takes him to 93%. `POST /v1/demo/reset` starts over.
 
 ## Security
 
@@ -46,6 +46,13 @@ Log in as `adviseur` and call `POST /v1/demo/volgende` repeatedly. Tom en Lien's
 ## Deploy
 
 No build step and no database. Deploy the `Dockerfile` to any container host (Railway, Render, Fly.io, Cloud Run), or use a Node runtime with `pnpm install` / `pnpm start`. Set `JWT_SECRET` (recommended), `DEMO_MODE`, `CORS_ORIGINS`, `HOST=0.0.0.0` and `TRUST_PROXY=true`. State lives in memory, so run a single instance.
+
+## Unfinished (PoC)
+
+- State lives in memory and resets on restart; run one instance.
+- Signals are scripted per demo week. There are no live connectors to Doccle, geofencing or bank transactions yet: the `ingest` role and `POST /v1/klanten/:klantId/signalen` are where they would plug in.
+- The playbook lists actions per moment, but there's no endpoint that executes them (straight-through processing is simulated in the app).
+- Demo users and their shared password are hardcoded for the hackathon. The target is itsme login, and OAuth scopes for the MCP server.
 
 ## Stack
 

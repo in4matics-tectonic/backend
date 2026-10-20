@@ -164,6 +164,7 @@ export const ecosysteemRoutes: FastifyPluginAsyncZod = async (app) => {
         },
         clusters,
         verbanden,
+        koppelingen: store.koppelingen(req.params.klantId),
       };
     },
   );

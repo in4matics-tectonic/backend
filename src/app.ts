@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { hasZodFastifySchemaValidationErrors, jsonSchemaTransform, serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import { authenticate, requireRole } from './auth.js';
 import { config } from './config.js';
+import { agentRoutes } from './routes/agent.js';
 import { authRoutes } from './routes/auth.js';
 import { demoRoutes } from './routes/demo.js';
 import { ecosysteemRoutes } from './routes/ecosystemen.js';
@@ -67,6 +68,7 @@ export async function buildApp() {
       await v1.register(klantRoutes);
       await v1.register(momentRoutes);
       await v1.register(ecosysteemRoutes);
+      await v1.register(agentRoutes);
       await v1.register(kansRoutes);
       if (config.DEMO_MODE) await v1.register(demoRoutes);
       v1.get(

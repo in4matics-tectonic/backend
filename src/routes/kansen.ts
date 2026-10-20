@@ -11,7 +11,7 @@ const KlantParams = z.object({ klantId: z.string().max(32) });
 const tags = { security: [{ bearer: [] }], tags: ['kansen'] };
 
 /** The customer doesn't see the score or who sent it. */
-const voorKlant = ({ id, link, waarom, bericht, status, verstuurdOp, bijgewerktOp }: KansType) => ({ id, link, waarom, bericht, status, verstuurdOp, bijgewerktOp });
+const voorKlant = ({ id, link, afzender, waarom, bericht, status, verstuurdOp, bijgewerktOp }: KansType) => ({ id, link, afzender, waarom, bericht, status, verstuurdOp, bijgewerktOp });
 
 export const kansRoutes: FastifyPluginAsyncZod = async (app) => {
   app.addHook('onRequest', authenticate);
@@ -40,7 +40,7 @@ export const kansRoutes: FastifyPluginAsyncZod = async (app) => {
       preHandler: requireKlantAccess('adviseur'),
       schema: {
         ...tags,
-        description: 'Send a possible link to the customer\'s app. 422 `geen_mogelijke_link` when the link isn\'t `mogelijk` (anymore), `al_verstuurd` when it was sent before.',
+        description: 'Send a possible link, or a partner pair (`koppeling:<partner>~<partner>`), to the customer\'s app. 422 `geen_mogelijke_link` when it isn\'t `mogelijk` (anymore), `al_verstuurd` when it was sent before.',
         params: KlantParams,
         body: z.object({ link: z.string().max(120), bericht: z.string().trim().min(1).max(280).optional() }).strict(),
         response: { 201: KansAdviseur, ...fouten(400, 401, 403, 404, 422) },
@@ -48,6 +48,25 @@ export const kansRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req, reply) => {
       const { klantId } = req.params;
+      if (store.kansen(klantId).some((k) => k.link.id === req.body.link)) return reply.code(422).send({ error: 'al_verstuurd' });
+
+      // A partner pair: the customer decides in the app whether the two partners may work together
+      if (req.body.link.startsWith('koppeling:')) {
+        const paar = store.koppelingen(klantId).find((k) => k.id === req.body.link);
+        if (!paar || paar.status !== 'mogelijk') return reply.code(422).send({ error: 'geen_mogelijke_link' });
+        const kans = store.addKans({
+          klantId,
+          link: { id: paar.id, soort: 'koppeling', ref: paar.id.slice('koppeling:'.length), naam: paar.naam, ecosysteem: paar.ecosysteem, ecosysteemNaam: paar.ecosysteemNaam },
+          score: 1,
+          waarom: [paar.doel],
+          bericht: req.body.bericht ?? null,
+          verstuurdDoor: req.user.sub,
+          afzender: 'adviseur',
+        });
+        store.log(req.user.sub, 'kans_verstuurd', klantId, paar.id);
+        return reply.code(201).send(kans);
+      }
+
       const { clusters } = store.ecosystemen(klantId);
       const cluster = clusters.find((c) => c.links.some((l) => l.id === req.body.link));
       const link = cluster?.links.find((l) => l.id === req.body.link);
@@ -61,6 +80,7 @@ export const kansRoutes: FastifyPluginAsyncZod = async (app) => {
         waarom: [...new Set((link.waarom ?? []).map((w) => w.reden))],
         bericht: req.body.bericht ?? null,
         verstuurdDoor: req.user.sub,
+        afzender: 'adviseur',
       });
       store.log(req.user.sub, 'kans_verstuurd', klantId, link.id);
       return reply.code(201).send(kans);

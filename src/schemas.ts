@@ -184,6 +184,16 @@ const Link = z.object({
     .optional()
     .describe('Only for mogelijk: the rules that suggested it'),
 });
+export const Koppeling = z.object({
+  id: z.string().describe('koppeling:<partner>~<partner>'),
+  van: NodeId,
+  naar: NodeId,
+  naam: z.string(),
+  ecosysteem: EcosysteemId,
+  ecosysteemNaam: z.string(),
+  doel: z.string().describe('Why, in words the customer can read'),
+  status: z.enum(['mogelijk', 'voorgesteld', 'actief', 'afgewezen']).describe('voorgesteld: sent to the app; actief: the customer agreed'),
+});
 const Cluster = z.object({
   ecosysteem: EcosysteemId,
   naam: z.string(),
@@ -203,6 +213,9 @@ export const KlantEcosystemen = z.object({
   verbanden: z
     .array(z.object({ van: z.string().describe('Node id or moment:<MomentId>'), naar: NodeId, gewicht: z.number() }))
     .describe('Edges behind the mogelijk links, for drawing the graph'),
+  koppelingen: z
+    .array(Koppeling)
+    .describe('Partner pairs for this customer: two partners that share data with KBC and would work better together'),
 });
 
 // ---- Kansen: possible links an adviser sent to the customer's app ----
@@ -212,7 +225,15 @@ export const KansStatus = z
   .describe('nieuw: not shown yet; gezien: the app showed it; interesse / afgewezen: the customer answered');
 const KansBasis = z.object({
   id: z.string(),
-  link: z.object({ id: NodeId, soort: z.enum(['product', 'partner']), ref: z.string(), naam: z.string(), ecosysteem: EcosysteemId, ecosysteemNaam: z.string() }),
+  link: z.object({
+    id: z.string().describe('Node id, or koppeling:<partner>~<partner> for a partner pair'),
+    soort: z.enum(['product', 'partner', 'koppeling']),
+    ref: z.string(),
+    naam: z.string(),
+    ecosysteem: EcosysteemId,
+    ecosysteemNaam: z.string(),
+  }),
+  afzender: z.enum(['kate', 'adviseur']).describe('kate: the agent sent it on its own; adviseur: a KBC adviser did'),
   waarom: z.array(z.string()).describe('Why KBC suggests it, in words the customer can read'),
   bericht: z.string().nullable().describe('Optional personal note from the adviser'),
   status: KansStatus,
@@ -226,6 +247,22 @@ export const KansAdviseur = KansBasis.extend({
   verstuurdDoor: z.string(),
 }).describe('Adviser view');
 export const Kans = z.union([KansAdviseur, KansKlant]);
+
+// ---- The next-best-channel agent ----
+
+export const AgentBeslissing = z.object({
+  id: z.string(),
+  klantId: z.string(),
+  moment: z.enum(['GEZINSUITBREIDING', 'HUIS_KOPEN', 'TROUWEN', 'ZAAK_STARTEN', 'ZAAK_UITBREIDEN']),
+  score: z.number(),
+  kanaal: z.enum(['automatisch', 'adviseur']).describe('automatisch: Kate acts in the app on her own; adviseur: a KBC adviser takes it'),
+  engagement: z.object({ app: z.number(), adviseur: z.number() }).describe('Expected engagement per channel, 0..1'),
+  redenen: z.array(z.string()),
+  actie: z.string().describe('What the agent did, or the task it left for an adviser'),
+  status: z.enum(['uitgevoerd', 'taak', 'afgehandeld']),
+  voorstellen: z.array(z.object({ id: z.string(), naam: z.string() })).describe('For the adviser: links and partner pairs worth proposing'),
+  ts: z.string().describe('ISO timestamp of the last change'),
+});
 
 // ---- Audit ----
 
