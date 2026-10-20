@@ -1,5 +1,6 @@
 // Mock data. Tom & Lien come from the tech doc; Sarah exists to prove customers can't see each other.
 import type { Klant, PlaybookActie, Signaal } from './domain.js';
+import type { PartnerRelatie } from './ecosysteem.js';
 
 export interface Rekening {
   id: string;
@@ -36,6 +37,17 @@ export const PRODUCT_NAMEN: Record<string, string> = {
   AUTOVERZEKERING: 'Autoverzekering',
   HOSPITALISATIE: 'Hospitalisatieverzekering',
   FAMILIALE: 'Familiale verzekering',
+};
+
+/** Customer product codes -> product id in the KBC catalogue (catalogus.ts). */
+export const PRODUCT_CATALOGUS: Record<string, string> = {
+  ZICHTREKENING: 'kbc-plus-account',
+  SPAARREKENING: 'savings-accounts',
+  WOONKREDIET: 'home-loan',
+  WOONVERZEKERING: 'home-insurance',
+  AUTOVERZEKERING: 'car-insurance',
+  HOSPITALISATIE: 'hospitalisation-insurance',
+  FAMILIALE: 'family-insurance',
 };
 
 export function seed() {
@@ -104,5 +116,23 @@ export function seed() {
     { id: 'd3', klantId: 'K-2025-0102', afzender: 'Proximus', type: 'factuur', datum: '2026-09-05' },
   ];
 
-  return { klanten, signalen, playbooks, rekeningen, transacties, documenten };
+  // Partners the customer is a client of. deelt = the customer lets that partner share data with KBC (active link);
+  // otherwise KBC only knows the relation exists (known link), from the account or from use inside KBC Mobile.
+  const partnerRelaties: (PartnerRelatie & { klantId: string })[] = [
+    { klantId: 'K-2024-0417', partner: 'setle', herkomst: 'KBC_MOBILE', deelt: true, sinds: '2025-11-04' },
+    { klantId: 'K-2024-0417', partner: 'nmbs', herkomst: 'KBC_MOBILE', deelt: true, sinds: '2024-09-01' },
+    { klantId: 'K-2024-0417', partner: 'q8', herkomst: 'KBC_MOBILE', deelt: true, sinds: '2025-02-17' },
+    { klantId: 'K-2024-0417', partner: 'joyn', herkomst: 'KBC_MOBILE', deelt: true, sinds: '2024-05-22' },
+    { klantId: 'K-2024-0417', partner: 'cambio', herkomst: 'REKENING', deelt: false, sinds: '2025-06-10' },
+    { klantId: 'K-2024-0417', partner: 'vab', herkomst: 'REKENING', deelt: false, sinds: '2023-01-15' },
+    { klantId: 'K-2024-0417', partner: 'brussels-airport', herkomst: 'REKENING', deelt: false, sinds: '2026-07-02' },
+    { klantId: 'K-2025-0102', partner: 'de-lijn', herkomst: 'KBC_MOBILE', deelt: true, sinds: '2025-01-08' },
+    { klantId: 'K-2025-0102', partner: 'billit', herkomst: 'KLANT', deelt: true, sinds: '2026-03-01' },
+    { klantId: 'K-2025-0102', partner: 'velo-antwerpen', herkomst: 'REKENING', deelt: false, sinds: '2025-04-12' },
+    { klantId: 'K-2025-0102', partner: 'bolero', herkomst: 'REKENING', deelt: false, sinds: '2025-10-30' },
+    { klantId: 'K-2025-0102', partner: 'immoscoop', herkomst: 'KBC_MOBILE', deelt: false, sinds: '2026-08-19' },
+    { klantId: 'K-2025-0102', partner: 'firsty', herkomst: 'REKENING', deelt: false, sinds: '2026-06-24' },
+  ];
+
+  return { klanten, signalen, playbooks, rekeningen, transacties, documenten, partnerRelaties };
 }

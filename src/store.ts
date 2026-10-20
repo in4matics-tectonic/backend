@@ -1,7 +1,9 @@
 // In-memory state. Good enough for a PoC; swap for SQLite/Postgres behind these functions later.
 import { randomUUID } from 'node:crypto';
+import type { PartnerId } from './catalogus.js';
 import { berekenScore, filterPlaybook, MOMENTEN, type MomentId, type Signaal } from './domain.js';
-import { seed } from './seed.js';
+import { berekenEcosystemen } from './ecosysteem.js';
+import { PRODUCT_CATALOGUS, seed } from './seed.js';
 
 type StoredSignaal = Signaal & { klantId: string };
 
@@ -68,7 +70,39 @@ export const store = {
     }).filter((m) => m.signalen.length > 0);
   },
 
+  partnerRelaties: (klantId: string) => db.partnerRelaties.filter((r) => r.klantId === klantId),
+
+  /**
+   * Customer switches data sharing for a partner. Switching it on for a partner KBC didn't know creates the
+   * relation (origin KLANT); switching that one off again removes it, since KBC never knew it otherwise.
+   */
+  zetDeling(klantId: string, partner: PartnerId, deelt: boolean) {
+    const r = db.partnerRelaties.find((x) => x.klantId === klantId && x.partner === partner);
+    if (!r) {
+      if (deelt) db.partnerRelaties.push({ klantId, partner, herkomst: 'KLANT', deelt, sinds: new Date().toISOString().slice(0, 10) });
+    } else if (!deelt && r.herkomst === 'KLANT') {
+      db.partnerRelaties = db.partnerRelaties.filter((x) => x !== r);
+    } else {
+      r.deelt = deelt;
+    }
+    return db.partnerRelaties.find((x) => x.klantId === klantId && x.partner === partner) ?? null;
+  },
+
+  ecosystemen(klantId: string) {
+    const klant = this.klant(klantId)!;
+    return berekenEcosystemen({
+      producten: klant.producten.map((c) => PRODUCT_CATALOGUS[c] ?? c),
+      relaties: this.partnerRelaties(klantId),
+      toestemming: klant.toestemming,
+      // Only a moment the customer confirmed may widen their world; a detected-but-unconfirmed one may not
+      bevestigdeMomenten: this.momenten(klantId).filter((m) => m.bevestigd).map((m) => m.moment),
+    });
+  },
+
   log(actor: string, actie: string, klantId?: string, detail?: string) {
+    // Polling clients re-read the same data every few seconds: one entry per minute per read is enough
+    const vorige = audit.findLast((a) => a.actor === actor && a.actie === actie && a.klantId === klantId);
+    if (actie.startsWith('read_') && vorige && Date.now() - Date.parse(vorige.ts) < 60_000) return;
     audit.push({ ts: new Date().toISOString(), actor, actie, klantId, detail });
     if (audit.length > 5000) audit.shift();
   },

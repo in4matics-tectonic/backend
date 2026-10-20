@@ -2,7 +2,8 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { authenticate, requireKlantAccess, requireRole } from '../auth.js';
 import { Bron } from '../domain.js';
-import { PRODUCT_NAMEN } from '../seed.js';
+import { PRODUCTEN } from '../catalogus.js';
+import { PRODUCT_CATALOGUS, PRODUCT_NAMEN } from '../seed.js';
 import { store } from '../store.js';
 
 const KlantParams = z.object({ klantId: z.string().max(32) });
@@ -44,7 +45,10 @@ export const klantRoutes: FastifyPluginAsyncZod = async (app) => {
   );
 
   app.get('/klanten/:klantId/producten', { preHandler: read, schema: { ...secured, params: KlantParams } }, async (req) => {
-    return store.klant(req.params.klantId)!.producten.map((code) => ({ code, naam: PRODUCT_NAMEN[code] ?? code }));
+    return store.klant(req.params.klantId)!.producten.map((code) => {
+      const catalogus = PRODUCTEN.find((p) => p.id === (PRODUCT_CATALOGUS[code] ?? code));
+      return { code, naam: PRODUCT_NAMEN[code] ?? catalogus?.naam ?? code, catalogusId: catalogus?.id ?? null, ecosysteem: catalogus?.ecosysteem ?? null };
+    });
   });
 
   app.get('/klanten/:klantId/documenten', { preHandler: read, schema: { ...secured, params: KlantParams } }, async (req) => {

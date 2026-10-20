@@ -52,7 +52,7 @@ Which account to use: mobile app → `tom`/`lien`; backoffice → `adviseur`; MC
 | `GET K` | klant, adviseur | Profile: `naam`, `toestemming`, `producten`, `landschap` |
 | `GET K/rekeningen` | klant, adviseur | Bank accounts |
 | `GET K/transacties?rekeningId=&limit=` | klant, adviseur | Transactions, newest first (limit ≤ 200, default 50) |
-| `GET K/producten` | klant, adviseur | `[{code, naam}]` |
+| `GET K/producten` | klant, adviseur | `[{code, naam, catalogusId, ecosysteem}]` |
 | `GET K/documenten` | klant, adviseur | Doccle documents: **metadata only** (`afzender`, `type`, `datum`) |
 | `PUT K/toestemming` | klant | Partial `{ "DOCCLE": false, ... }` → updated consent |
 | `POST K/signalen` | ingest, adviseur | Ingest a signal (see below) |
@@ -62,6 +62,12 @@ Which account to use: mobile app → `tom`/`lien`; backoffice → `adviseur`; MC
 | `POST K/momenten/:moment/bevestig` | klant | "Ja, klopt": unlocks phase `voorstel` + actions |
 | `DELETE K/momenten/:moment` | klant | "Niet voor ons" / MCP `revoke_moment`: **deletes** the signals |
 | `POST K/momenten/delen` | klant | MCP `share_life_moment`: `{moment, fase: orienterend\|plannend\|beslist, verwachte_maand?: "YYYY-MM"}` |
+| `GET /v1/catalogus` | klant, adviseur | Whole KBC catalogue in one call: `{ecosystemen, producten, partners}` |
+| `GET /v1/ecosystemen` · `GET /v1/ecosystemen/:ecosysteem` | klant, adviseur | The 21 ecosystems; one ecosystem with its products |
+| `GET /v1/partners` | klant, adviseur | The 40 partners: `{id, naam, ecosysteem, ecosystemen, producten, gevoelig}` |
+| `GET K/partners` | klant, adviseur | Every partner with the customer's relation: `klantBijPartner`, `deelt`, `herkomst`, `sinds` |
+| `PUT K/partners/:partner` | klant | `{deelt: boolean}`: allow / stop that partner sharing data with KBC |
+| `GET K/ecosystemen` | klant, adviseur | The customer's ecosystem clusters with active, known and possible links (see below) |
 | `GET /v1/audit` | adviseur | Last 500 audit events |
 | `GET /v1/demo` · `POST /v1/demo/volgende` · `POST /v1/demo/week {week}` · `POST /v1/demo/reset` | adviseur, only if `DEMO_MODE=true` | Demo clock: Speel af / Volgende / Reset |
 | `GET /health` | public | `{ok:true}` |
@@ -98,13 +104,39 @@ klant sees a privacy-filtered object:
 - A customer gets `acties` only in `voorstel`. `andereSignalen` is the number of sensitive signals whose labels are hidden; show it as "en andere signalen waarvoor je toestemming gaf".
 - Playbook actions for products the customer already has are filtered out (e.g. `a7` autolening).
 
+### Ecosystems, partners and clusters
+
+The catalogue (`src/catalogus.ts`, from `KBC_Ecosystems.xlsx`) has 21 ecosystems (`WONEN`, `MOBILITEIT`, `ENERGIE`, `REIZEN`, `ONDERNEMEN`, …), 229 products and 40 partners. Product ids are slugs of the English name (`home-loan`, `train-tickets-nmbs`); `partners` names the third party behind a product. `kanaal: "B2B"` marks APIs, widgets and Partner Hub integrations: those are never suggested to a customer.
+
+Per customer, `GET K/ecosystemen` returns one **cluster per ecosystem** the customer touches:
+
+```json
+{ "week": 0,
+  "samenvatting": { "actief": 10, "gekend": 3, "mogelijk": 21, "ecosystemen": 10, "nieuweEcosystemen": ["ENERGIE","PENSIOEN","SPAREN"] },
+  "clusters": [
+    { "ecosysteem": "WONEN", "naam": "Wonen", "status": "actief", "links": [
+      { "id": "product:home-loan", "soort": "product", "ref": "home-loan", "naam": "Home loan", "ecosysteem": "WONEN", "status": "actief", "herkomst": "KBC_PRODUCT" },
+      { "id": "partner:setle", "soort": "partner", "ref": "setle", "naam": "Setle", "status": "actief", "herkomst": "KBC_MOBILE", "sinds": "2025-11-04", "...": "" },
+      { "id": "product:renovation-loan", "status": "mogelijk", "score": 0.65,
+        "waarom": [{ "via": "product:home-loan", "naam": "Home loan", "reden": "Een woonkrediet loopt vaak samen met …" }], "...": "" } ] } ],
+  "verbanden": [ { "van": "partner:setle", "naar": "product:renovation-loan", "gewicht": 0.5 } ] }
+```
+
+- Link `status`: **`actief`** = a KBC product the customer holds, or a partner the customer lets share data with KBC. **`gekend`** = a partner relation KBC knows from its own data (`herkomst`: `REKENING` payments seen on the account, `KBC_MOBILE` the partner service was used inside the app), without data sharing. **`mogelijk`** = a product or partner the customer might need.
+- Cluster `status` is its strongest link. A cluster with only `mogelijk` links is an ecosystem that's new for the customer (`samenvatting.nieuweEcosystemen`): that's where the app's world can grow.
+- `verbanden` are the reasoning edges behind every `mogelijk` link (draw them as the graph). `van` can also be `moment:<MomentId>`.
+- Possible links come from fixed rules (`REGELS` in `src/ecosysteem.ts`) with the same noisy-OR as the moment score; a `gekend` link counts half, an active one fully. Shown from 25%. Only a **confirmed** life moment adds suggestions.
+- Consent: a `REKENING`-origin relation only exists with `REKENING` consent, a `KBC_MOBILE` one only with `APP` consent.
+- Health partners (`helena`, `leadlife`, `kom-op-tegen-kanker`, `gevoelig: true`) are never inferred, never suggested and never feed suggestions; `PUT … {deelt:true}` on them → `422 gevoelige_partner`.
+- `PUT K/partners/:partner {deelt:true}` on a partner KBC didn't know creates the relation (`herkomst: "KLANT"`); switching that one off removes it again.
+
 ### Demo timeline
 
 Signals `s1..s7` (weeks 7–20) are pre-seeded for Tom en Lien and only "exist" once the demo clock reaches their week. The clock starts at 0. Each `POST /v1/demo/volgende` jumps to the next week and the score goes **35 → 74 → 79 → 82 → 87 → 93 → 94%**. `POST /v1/demo/reset` restores all seed data. Frontends should poll `GET K/momenten` (e.g. every 1–2 s) to stay in sync.
 
 ### Errors
 
-Always `{ "error": "<code>", ... }`: `400 validation_error` (with `issues`), `401 unauthorized|invalid_credentials`, `403 forbidden` (wrong role), `404 not_found` (also when a customer requests **another** customer's id, on purpose), `422 no_consent`, `429` rate limited (300/min global, 5/min on login).
+Always `{ "error": "<code>", ... }`: `400 validation_error` (with `issues`), `401 unauthorized|invalid_credentials`, `403 forbidden` (wrong role), `404 not_found` (also when a customer requests **another** customer's id, on purpose), `422 no_consent` / `gevoelige_partner`, `429` rate limited (300/min global, 5/min on login).
 
 ---
 
@@ -131,11 +163,13 @@ pnpm typecheck
 src/
   config.ts        env parsing + defaults; refuses to start with weak secrets
   domain.ts        types, score engine (berekenScore), playbook filter
-  seed.ts          mock customers, accounts, transactions, Doccle docs, signals, playbook
+  catalogus.ts     KBC ecosystems, products and partners (from KBC_Ecosystems.xlsx)
+  ecosysteem.ts    partner relations, suggestion rules (REGELS) and the cluster engine (berekenEcosystemen)
+  seed.ts          mock customers, accounts, transactions, Doccle docs, signals, playbook, partner relations
   store.ts         in-memory state + demo clock + audit log
   auth.ts          demo users (scrypt), JWT roles, requireRole / requireKlantAccess
   app.ts           Fastify setup, security plugins, error handler, route mounting
-  routes/          auth, klanten (customer data), momenten (signals + moments + MCP share), demo
+  routes/          auth, klanten (customer data), momenten (signals + moments + MCP share), ecosystemen (catalogue, partners, clusters), demo
 ```
 
 Adding an endpoint: put it in the right `routes/*.ts`, give it a Zod `schema` (`params`/`querystring`/`body`, use `.strict()` on bodies) plus `tags` and `security: [{ bearer: [] }]`. Guard it with `requireKlantAccess(...roles)` for anything under `/klanten/:klantId`, or `requireRole(...)` otherwise. Call `store.log(...)` on reads of personal data and on every write. Then run `pnpm typecheck`.

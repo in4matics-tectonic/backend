@@ -10,6 +10,7 @@ import { authenticate, requireRole } from './auth.js';
 import { config } from './config.js';
 import { authRoutes } from './routes/auth.js';
 import { demoRoutes } from './routes/demo.js';
+import { ecosysteemRoutes } from './routes/ecosystemen.js';
 import { klantRoutes } from './routes/klanten.js';
 import { momentRoutes } from './routes/momenten.js';
 import { store } from './store.js';
@@ -39,7 +40,7 @@ export async function buildApp() {
 
   await app.register(swagger, {
     openapi: {
-      info: { title: 'KBC Momentum API', version: '0.1.0', description: 'Aggregator API: customer data in, signals in, moments out.' },
+      info: { title: 'KBC Momentum API', version: '0.1.0', description: 'Aggregator API: customer data in, signals in, moments and ecosystem clusters out.' },
       components: { securitySchemes: { bearer: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } } },
     },
     transform: jsonSchemaTransform,
@@ -62,6 +63,7 @@ export async function buildApp() {
       await v1.register(authRoutes);
       await v1.register(klantRoutes);
       await v1.register(momentRoutes);
+      await v1.register(ecosysteemRoutes);
       if (config.DEMO_MODE) await v1.register(demoRoutes);
       v1.get('/audit', { onRequest: authenticate, preHandler: requireRole('adviseur'), schema: { tags: ['audit'], security: [{ bearer: [] }] } }, async () =>
         store.audit().slice(0, 500),
