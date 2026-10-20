@@ -15,7 +15,7 @@ export const klantRoutes: FastifyPluginAsyncZod = async (app) => {
 
   app.get('/klanten', { preHandler: requireRole('adviseur'), schema: secured }, async (req) => {
     store.log(req.user.sub, 'list_klanten');
-    return store.klanten().map((k) => ({ id: k.id, naam: k.naam }));
+    return store.klanten().map((k) => ({ id: k.id, naam: k.naam, onderneming: k.onderneming?.naam ?? null }));
   });
 
   app.get('/klanten/:klantId', { preHandler: read, schema: { ...secured, params: KlantParams } }, async (req) => {

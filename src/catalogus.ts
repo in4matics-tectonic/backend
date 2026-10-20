@@ -260,7 +260,7 @@ export const PRODUCTEN: CatalogusProduct[] = [
   p('avalised-bill-of-exchange', 'Avalised bill of exchange', 'INTERNATIONAAL'),
   p('import-forfaiting', 'Import forfaiting', 'INTERNATIONAAL'),
   p('hedge-foreign-exchange-and-interest-rate-risk', 'Hedge foreign exchange and interest rate risk', 'INTERNATIONAAL'),
-  p('goanddeal-pro', 'Go&Deal Pro', 'INTERNATIONAAL'),
+  p('go-and-deal-pro', 'Go&Deal Pro', 'INTERNATIONAAL'),
   p('business-liability-insurance', 'Business liability insurance', 'BESCHERMING_ONDERNEMING'),
   p('professional-liability-insurance', 'Professional liability insurance', 'BESCHERMING_ONDERNEMING'),
   p('medical-professional-liability-insurance', 'Medical professional liability insurance', 'BESCHERMING_ONDERNEMING'),

@@ -13,6 +13,18 @@ const NUTTIGE_INFO: Partial<Record<MomentId, string[]>> = {
     'Groeipakket aanvragen kan vanaf 6 maanden zwangerschap',
     'Een kindje meeverzekeren in je hospitalisatie gebeurt best vóór de geboorte',
   ],
+  HUIS_KOPEN: [
+    'Met een woonbudget in KBC Mobile zie je meteen hoeveel je kan lenen',
+    'Een schatting van de woning kan je online aanvragen via Immoscoop',
+  ],
+  TROUWEN: [
+    'Een huwelijkscontract regel je bij de notaris, best enkele maanden vóór het huwelijk',
+    'Na het huwelijk kijk je best de begunstigden van je verzekeringen na',
+  ],
+  ZAAK_UITBREIDEN: [
+    'KBC Innovation Banking denkt mee over groeifinanciering voor scale-ups',
+    'Voor investeringen in duurzame energie bestaan er VLAIO-steunmaatregelen',
+  ],
 };
 
 export const momentRoutes: FastifyPluginAsyncZod = async (app) => {

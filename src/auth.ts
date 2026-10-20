@@ -29,7 +29,7 @@ function hash(password: string, salt: Buffer) {
 const USERS: Record<string, { role: Role; klantId?: string }> = {
   tom: { role: 'klant', klantId: 'K-2024-0417' },
   lien: { role: 'klant', klantId: 'K-2024-0417' },
-  sarah: { role: 'klant', klantId: 'K-2025-0102' },
+  jonas: { role: 'klant', klantId: 'K-2022-0311' },
   adviseur: { role: 'adviseur' },
   ingest: { role: 'ingest' },
 };

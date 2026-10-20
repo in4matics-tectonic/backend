@@ -26,7 +26,7 @@ TOKEN=$(curl -s -X POST localhost:3000/v1/auth/login -H 'content-type: applicati
 curl -s localhost:3000/v1/klanten/K-2024-0417/momenten -H "authorization: Bearer $TOKEN"
 ```
 
-Demo users: `tom`, `lien`, `sarah` (customers), `adviseur` (backoffice) and `ingest` (signal sources). They all use the password `in4matics-must-win` (override with `DEMO_PASSWORD`).
+Demo users: `tom`, `lien`, `jonas` (customers), `adviseur` (backoffice) and `ingest` (signal sources). They all use the password `in4matics-must-win` (override with `DEMO_PASSWORD`).
 
 ## Demo flow
 

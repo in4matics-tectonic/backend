@@ -3,8 +3,8 @@
 import { z } from 'zod';
 
 export const BRONNEN = ['EIGEN_AI', 'DOCCLE', 'GEOFENCE', 'APP', 'REKENING'] as const;
-export const MOMENTEN = ['GEZINSUITBREIDING', 'HUIS_KOPEN', 'ZAAK_STARTEN'] as const;
-export const DOMEINEN = ['huis', 'gezin', 'auto', 'bescherming', 'sparen', 'gezondheid', 'reizen'] as const;
+export const MOMENTEN = ['GEZINSUITBREIDING', 'HUIS_KOPEN', 'TROUWEN', 'ZAAK_STARTEN', 'ZAAK_UITBREIDEN'] as const;
+export const DOMEINEN = ['huis', 'gezin', 'auto', 'bescherming', 'sparen', 'gezondheid', 'reizen', 'onderneming'] as const;
 
 export const Bron = z.enum(BRONNEN);
 export const MomentId = z.enum(MOMENTEN);
@@ -13,9 +13,20 @@ export type MomentId = z.infer<typeof MomentId>;
 export type Domein = (typeof DOMEINEN)[number];
 export type DomeinStatus = 'geregeld' | 'kans' | 'nieuw';
 
+/** For self-employed customers: the company they bank for at KBC. */
+export interface Onderneming {
+  naam: string;
+  ondernemingsnummer: string;
+  sector: string;
+  omschrijving: string;
+  opgericht: string; // YYYY-MM-DD
+  werknemers: number;
+}
+
 export interface Klant {
   id: string;
   naam: string;
+  onderneming?: Onderneming;
   toestemming: Record<Bron, boolean>;
   producten: string[];
   landschap: Record<Domein, DomeinStatus>;

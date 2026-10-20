@@ -33,8 +33,8 @@ curl -s $API/v1/klanten/K-2024-0417/momenten -H "authorization: Bearer $TOKEN"
 
 | Username | Role | klantId | Can |
 | --- | --- | --- | --- |
-| `tom`, `lien` | `klant` | `K-2024-0417` (Tom en Lien, the demo persona) | Own data only; confirm/revoke/share moments; change consent |
-| `sarah` | `klant` | `K-2025-0102` | Same; exists to prove customers are isolated |
+| `tom`, `lien` | `klant` | `K-2024-0417` (Tom en Lien) | Own data only; confirm/revoke/share moments; change consent and partner sharing |
+| `jonas` | `klant` | `K-2022-0311` (Jonas, Stroomvaart BV) | Same; also proves customers are isolated |
 | `adviseur` | `adviseur` | – | Read every customer, full signal detail, audit log, demo controls |
 | `ingest` | `ingest` | – | **Only** `POST /v1/klanten/:klantId/signalen` |
 
@@ -42,14 +42,14 @@ Which account to use: mobile app → `tom`/`lien`; backoffice → `adviseur`; MC
 
 ## Endpoints
 
-`K` = `/v1/klanten/:klantId`. Moment ids: `GEZINSUITBREIDING | HUIS_KOPEN | ZAAK_STARTEN`.
+`K` = `/v1/klanten/:klantId`. Moment ids: `GEZINSUITBREIDING | HUIS_KOPEN | TROUWEN | ZAAK_STARTEN | ZAAK_UITBREIDEN`.
 
 | Method & path | Roles | Purpose |
 | --- | --- | --- |
 | `POST /v1/auth/login` | public (5/min/IP) | `{username, password}` → JWT |
 | `GET /v1/me` | any | Decoded token |
-| `GET /v1/klanten` | adviseur | List customers `[{id, naam}]` |
-| `GET K` | klant, adviseur | Profile: `naam`, `toestemming`, `producten`, `landschap` |
+| `GET /v1/klanten` | adviseur | List customers `[{id, naam, onderneming}]` |
+| `GET K` | klant, adviseur | Profile: `naam`, `toestemming`, `producten`, `landschap`, and `onderneming` for self-employed customers |
 | `GET K/rekeningen` | klant, adviseur | Bank accounts |
 | `GET K/transacties?rekeningId=&limit=` | klant, adviseur | Transactions, newest first (limit ≤ 200, default 50) |
 | `GET K/producten` | klant, adviseur | `[{code, naam, catalogusId, ecosysteem}]` |
@@ -112,7 +112,7 @@ Per customer, `GET K/ecosystemen` returns one **cluster per ecosystem** the cust
 
 ```json
 { "week": 0,
-  "samenvatting": { "actief": 10, "gekend": 3, "mogelijk": 21, "ecosystemen": 10, "nieuweEcosystemen": ["ENERGIE","PENSIOEN","SPAREN"] },
+  "samenvatting": { "actief": 12, "gekend": 3, "mogelijk": 19, "ecosystemen": 11, "nieuweEcosystemen": ["BELEGGEN","ENERGIE","PENSIOEN"] },
   "clusters": [
     { "ecosysteem": "WONEN", "naam": "Wonen", "status": "actief", "links": [
       { "id": "product:home-loan", "soort": "product", "ref": "home-loan", "naam": "Home loan", "ecosysteem": "WONEN", "status": "actief", "herkomst": "KBC_PRODUCT" },
@@ -130,9 +130,21 @@ Per customer, `GET K/ecosystemen` returns one **cluster per ecosystem** the cust
 - Health partners (`helena`, `leadlife`, `kom-op-tegen-kanker`, `gevoelig: true`) are never inferred, never suggested and never feed suggestions; `PUT … {deelt:true}` on them → `422 gevoelige_partner`.
 - `PUT K/partners/:partner {deelt:true}` on a partner KBC didn't know creates the relation (`herkomst: "KLANT"`); switching that one off removes it again.
 
-### Demo timeline
+### Demo profiles and timeline
 
-Signals `s1..s7` (weeks 7–20) are pre-seeded for Tom en Lien and only "exist" once the demo clock reaches their week. The clock starts at 0. Each `POST /v1/demo/volgende` jumps to the next week and the score goes **35 → 74 → 79 → 82 → 87 → 93 → 94%**. `POST /v1/demo/reset` restores all seed data. Frontends should poll `GET K/momenten` (e.g. every 1–2 s) to stay in sync.
+- **Tom en Lien** (`K-2024-0417`): renting in Kortrijk, expecting a baby, one electric car (loan + insurance, VAB charging card), saving for a house (€38.650) and planning to marry. Partners: Immoscoop, VAB, NMBS, Joyn share data; Cambio, Brussels Airport, De Immowinkel are known.
+- **Jonas** (`K-2022-0311`): founder of **Stroomvaart BV**, emission-free inland shipping with electric push boats on green shore power, 6 employees. Business account, investment and energy loans, business insurances. Partners: Billit, Encon, Kube share data; Sweco, NOWJOBS, Go Solid, MoveSmart, Firsty are known. No geofencing consent.
+
+Signals only "exist" once the demo clock reaches their week. The clock starts at 0; each `POST /v1/demo/volgende` jumps to the next demo week (7, 10, 12, 14, 16, 18, 20):
+
+| Week | 7 | 10 | 12 | 14 | 16 | 18 | 20 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Tom en Lien · `GEZINSUITBREIDING` (s1–s7) | 35 | 74 | 79 | 82 | 87 | 93 | **94** |
+| Tom en Lien · `HUIS_KOPEN` (s8–s12) | – | 25 | 25 | 51 | 61 | 71 | **75** |
+| Tom en Lien · `TROUWEN` (s13–s15) | – | – | 30 | 30 | 41 | 52 | **52** |
+| Jonas · `ZAAK_UITBREIDEN` (j1–j7) | 30 | 55 | 64 | 78 | 84 | 87 | **91** |
+
+`POST /v1/demo/reset` restores all seed data. Frontends should poll `GET K/momenten` (e.g. every 1–2 s) to stay in sync.
 
 ### Errors
 

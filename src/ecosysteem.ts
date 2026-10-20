@@ -90,10 +90,13 @@ export const REGELS: Regel[] = [
   { van: 'partner:nmbs', reden: 'Reist met de trein', naar: [['partner:blue-bike', 0.45], ['partner:de-lijn', 0.35], ['product:bicycle-insurance', 0.2]] },
   { van: 'partner:de-lijn', reden: 'Reist met bus en tram', naar: [['partner:nmbs', 0.35], ['partner:mobit', 0.3]] },
   { van: 'partner:velo-antwerpen', reden: 'Fietst met deelfietsen', naar: [['product:bicycle-insurance', 0.4], ['product:bicycle-scooter-or-motorcycle-loan', 0.3]] },
-  { van: 'partner:vab', reden: 'Lid van VAB', naar: [['product:car-insurance', 0.35], ['product:travel-insurance', 0.25]] },
+  { van: 'partner:vab', reden: 'Lid van VAB', naar: [['product:calculate-monthly-car-costs', 0.25], ['product:travel-insurance', 0.25]] },
   { van: 'product:electric-car-loan', reden: 'Elektrisch rijden en thuis laden', naar: [
     ['product:electric-car-insurance', 0.6], ['product:calculate-solar-panels-and-request-a-quote', 0.35],
     ['product:calculate-a-home-battery-and-request-a-quote', 0.35],
+  ] },
+  { van: 'product:electric-car-insurance', reden: 'Rijdt elektrisch', naar: [
+    ['partner:vab', 0.35], ['product:calculate-solar-panels-and-request-a-quote', 0.2], ['product:calculate-monthly-car-costs', 0.2],
   ] },
   { van: 'partner:movesmart', reden: 'Beheert een leasewagen', naar: [['product:manage-business-mobility-costs', 0.4]] },
 
@@ -103,12 +106,26 @@ export const REGELS: Regel[] = [
   { van: 'product:credit-cards', reden: 'Kredietkaarthouders reizen vaker', naar: [['product:travel-insurance', 0.25]] },
 
   // Energie
-  { van: 'partner:encon', reden: 'Duurzaamheidsadvies via Encon', naar: [['partner:kube', 0.3], ['product:energy-loan', 0.3]] },
+  { van: 'partner:encon', reden: 'Duurzaamheidsadvies via Encon', naar: [
+    ['partner:kube', 0.3], ['product:energy-loan', 0.3], ['product:calculate-solar-panels-and-request-a-quote', 0.35],
+    ['product:business-co2-insights-and-sector-comparison', 0.35],
+  ] },
+  { van: 'partner:kube', reden: 'Rapporteert ESG-cijfers via Kube', naar: [
+    ['product:business-co2-insights-and-sector-comparison', 0.5], ['partner:encon', 0.3], ['product:responsible-investing', 0.2],
+  ] },
+  { van: 'partner:sweco', reden: 'Liet een waterstudie maken door Sweco', naar: [['partner:encon', 0.3], ['product:business-co2-insights-and-sector-comparison', 0.25]] },
+  { van: 'product:energy-loan', reden: 'Financiert al energie-investeringen', naar: [
+    ['product:calculate-solar-panels-and-request-a-quote', 0.3], ['product:calculate-a-home-battery-and-request-a-quote', 0.25],
+  ] },
 
   // Gezin en gezondheid
   { van: 'moment:GEZINSUITBREIDING', reden: 'Levensmoment gezinsuitbreiding, bevestigd door de klant', naar: [
     ['product:save-for-someone-else', 0.7], ['product:family-insurance', 0.6], ['product:hospitalisation-insurance', 0.6],
     ['product:life-insurance', 0.55], ['product:service-vouchers', 0.45], ['product:accident-insurance', 0.35],
+  ] },
+  { van: 'moment:TROUWEN', reden: 'Levensmoment trouwen, bevestigd door de klant', naar: [
+    ['product:joint-account', 0.4], ['product:life-insurance', 0.45], ['product:travel-insurance', 0.4],
+    ['partner:firsty', 0.3], ['product:inheritance-planning-service', 0.25],
   ] },
   { van: 'product:family-insurance', reden: 'Een gezin wil goed beschermd zijn', naar: [['product:accident-insurance', 0.3], ['product:life-insurance', 0.25]] },
 
@@ -126,7 +143,7 @@ export const REGELS: Regel[] = [
   // Ondernemen
   { van: 'partner:billit', reden: 'Factureert via Billit', naar: [
     ['product:kbc-business-pro-account', 0.55], ['product:supplementary-pension-for-the-self-employed', 0.4],
-    ['product:business-liability-insurance', 0.35], ['product:start-it-at-kbc', 0.35], ['partner:go-solid', 0.35],
+    ['product:business-liability-insurance', 0.35], ['product:start-it-at-kbc', 0.2], ['partner:go-solid', 0.35],
     ['product:guaranteed-income-insurance-for-the-self-employed', 0.3],
   ] },
   { van: 'partner:soluz-io', reden: 'Factureert via Soluz.io', naar: [['product:kbc-business-pro-account', 0.5], ['partner:go-solid', 0.3]] },
@@ -136,8 +153,25 @@ export const REGELS: Regel[] = [
     ['product:tax-and-legal-advice-for-smes', 0.4],
   ] },
   { van: 'product:kbc-business-pro-account', reden: 'Heeft een zakelijke rekening', naar: [
-    ['product:kbc-business-debit-card', 0.4], ['product:payment-terminals', 0.3], ['partner:bancontact', 0.3],
+    ['product:kbc-business-debit-card', 0.4], ['product:payment-terminals', 0.2], ['partner:bancontact', 0.2],
   ] },
+  { van: 'moment:ZAAK_UITBREIDEN', reden: 'Levensmoment zaak uitbreiden, bevestigd door de klant', naar: [
+    ['product:kbc-innovation-banking', 0.55], ['partner:nowjobs', 0.5], ['product:strategic-advice-through-a-relationship-manager', 0.45],
+    ['product:go-and-deal-pro', 0.4], ['product:working-capital-forecasts', 0.35], ['product:hedge-foreign-exchange-and-interest-rate-risk', 0.35],
+    ['product:human-capital-solutions', 0.3],
+  ] },
+  { van: 'product:investment-loan', reden: 'Investeert met een krediet', naar: [
+    ['product:outstanding-balance-insurance-for-entrepreneurs', 0.5], ['product:hedge-foreign-exchange-and-interest-rate-risk', 0.35],
+    ['product:working-capital-forecasts', 0.3],
+  ] },
+  { van: 'product:business-liability-insurance', reden: 'Verzekert de aansprakelijkheid van de zaak', naar: [
+    ['product:directors-liability-insurance', 0.35], ['product:business-legal-assistance-insurance', 0.3],
+  ] },
+  { van: 'product:supplementary-pension-for-the-self-employed', reden: 'Bouwt als zelfstandige pensioen op', naar: [
+    ['product:individual-pension-commitment', 0.4], ['product:guaranteed-income-insurance-for-the-self-employed', 0.35],
+  ] },
+  { van: 'product:occupational-accident-insurance', reden: 'Heeft personeel in dienst', naar: [['product:kbc-employee-care', 0.3], ['product:kbc-team-benefit-plan', 0.3]] },
+  { van: 'partner:go-solid', reden: 'Laat onbetaalde facturen innen via Go Solid', naar: [['product:factoring-and-accounts-receivable-management', 0.45]] },
   { van: 'partner:nowjobs', reden: 'Werkt met flexwerkers via NOWJOBS', naar: [['product:occupational-accident-insurance', 0.45]] },
 
   // Dagelijks, winkelen, veiligheid
@@ -175,7 +209,9 @@ export interface Link {
 export interface Cluster { ecosysteem: EcosysteemId; naam: string; status: LinkStatus; links: Link[] }
 export interface Verband { van: NodeId | `moment:${MomentId}`; naar: NodeId; gewicht: number }
 
-const MOMENT_NAAM: Record<MomentId, string> = { GEZINSUITBREIDING: 'gezinsuitbreiding', HUIS_KOPEN: 'huis kopen', ZAAK_STARTEN: 'zaak starten' };
+const MOMENT_NAAM: Record<MomentId, string> = {
+  GEZINSUITBREIDING: 'gezinsuitbreiding', HUIS_KOPEN: 'huis kopen', TROUWEN: 'trouwen', ZAAK_STARTEN: 'zaak starten', ZAAK_UITBREIDEN: 'zaak uitbreiden',
+};
 const naamVan = (id: Van): string => {
   const [soort, ref] = id.split(':') as [string, string];
   if (soort === 'product') return PRODUCT.get(ref)!.naam;
