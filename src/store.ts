@@ -2,14 +2,30 @@
 import { randomUUID } from 'node:crypto';
 import type { PartnerId } from './catalogus.js';
 import { berekenScore, filterPlaybook, MOMENTEN, type MomentId, type Signaal } from './domain.js';
-import { berekenEcosystemen } from './ecosysteem.js';
+import { berekenEcosystemen, type Link } from './ecosysteem.js';
 import { PRODUCT_CATALOGUS, seed } from './seed.js';
 
 type StoredSignaal = Signaal & { klantId: string };
 
+export type KansStatus = 'nieuw' | 'gezien' | 'interesse' | 'afgewezen';
+/** A possible link an adviser sent to the customer's app. A snapshot: the link itself may change afterwards. */
+export interface Kans {
+  id: string;
+  klantId: string;
+  link: Pick<Link, 'id' | 'soort' | 'ref' | 'naam' | 'ecosysteem'> & { ecosysteemNaam: string };
+  score: number; // at the time it was sent
+  waarom: string[]; // the reasons behind the suggestion, in words the customer can read
+  bericht: string | null; // optional personal note from the adviser
+  status: KansStatus;
+  verstuurdDoor: string;
+  verstuurdOp: string;
+  bijgewerktOp: string;
+}
+
 let db = seed();
 let huidigeWeek = 0; // demo clock
 let bevestigingen = new Map<string, boolean>(); // `${klantId}:${moment}` -> confirmed
+let kansen: Kans[] = [];
 let audit: { ts: string; actor: string; actie: string; klantId?: string; detail?: string }[] = [];
 
 export const store = {
@@ -17,6 +33,7 @@ export const store = {
     db = seed();
     huidigeWeek = 0;
     bevestigingen = new Map();
+    kansen = [];
     audit = [];
   },
 
@@ -97,6 +114,22 @@ export const store = {
       // Only a moment the customer confirmed may widen their world; a detected-but-unconfirmed one may not
       bevestigdeMomenten: this.momenten(klantId).filter((m) => m.bevestigd).map((m) => m.moment),
     });
+  },
+
+  /** Newest first. */
+  kansen: (klantId: string) => kansen.filter((k) => k.klantId === klantId).sort((a, b) => b.verstuurdOp.localeCompare(a.verstuurdOp)),
+
+  addKans(k: Omit<Kans, 'id' | 'status' | 'verstuurdOp' | 'bijgewerktOp'>): Kans {
+    const nu = new Date().toISOString();
+    const kans: Kans = { ...k, id: `kans-${randomUUID()}`, status: 'nieuw', verstuurdOp: nu, bijgewerktOp: nu };
+    kansen.push(kans);
+    return kans;
+  },
+
+  zetKansStatus(klantId: string, id: string, status: KansStatus) {
+    const kans = kansen.find((k) => k.klantId === klantId && k.id === id);
+    if (kans) Object.assign(kans, { status, bijgewerktOp: new Date().toISOString() });
+    return kans ?? null;
   },
 
   log(actor: string, actie: string, klantId?: string, detail?: string) {

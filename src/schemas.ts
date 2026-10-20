@@ -205,6 +205,28 @@ export const KlantEcosystemen = z.object({
     .describe('Edges behind the mogelijk links, for drawing the graph'),
 });
 
+// ---- Kansen: possible links an adviser sent to the customer's app ----
+
+export const KansStatus = z
+  .enum(['nieuw', 'gezien', 'interesse', 'afgewezen'])
+  .describe('nieuw: not shown yet; gezien: the app showed it; interesse / afgewezen: the customer answered');
+const KansBasis = z.object({
+  id: z.string(),
+  link: z.object({ id: NodeId, soort: z.enum(['product', 'partner']), ref: z.string(), naam: z.string(), ecosysteem: EcosysteemId, ecosysteemNaam: z.string() }),
+  waarom: z.array(z.string()).describe('Why KBC suggests it, in words the customer can read'),
+  bericht: z.string().nullable().describe('Optional personal note from the adviser'),
+  status: KansStatus,
+  verstuurdOp: z.string().describe('ISO timestamp'),
+  bijgewerktOp: z.string().describe('ISO timestamp of the last status change'),
+});
+export const KansKlant = KansBasis.describe('Customer view');
+export const KansAdviseur = KansBasis.extend({
+  klantId: z.string(),
+  score: z.number().describe('0..1, the link score when it was sent'),
+  verstuurdDoor: z.string(),
+}).describe('Adviser view');
+export const Kans = z.union([KansAdviseur, KansKlant]);
+
 // ---- Audit ----
 
 export const AuditRegel = z.object({ ts: z.string().describe('ISO timestamp'), actor: z.string(), actie: z.string(), klantId: z.string().optional(), detail: z.string().optional() });

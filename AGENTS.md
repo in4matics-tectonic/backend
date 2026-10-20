@@ -68,6 +68,9 @@ Which account to use: mobile app → `tom`/`lien`; backoffice → `adviseur`; MC
 | `GET K/partners` | klant, adviseur | Every partner with the customer's relation: `klantBijPartner`, `deelt`, `herkomst`, `sinds` |
 | `PUT K/partners/:partner` | klant | `{deelt: boolean}`: allow / stop that partner sharing data with KBC |
 | `GET K/ecosystemen` | klant, adviseur | The customer's ecosystem clusters with active, known and possible links (see below) |
+| `GET K/kansen` | klant, adviseur | Opportunities an adviser sent to the app, newest first (see below) |
+| `POST K/kansen` | adviseur | `{link: "<node id>", bericht?: "≤280 chars"}`: send a `mogelijk` link to the customer's app |
+| `PUT K/kansen/:kansId` | klant | `{status: "gezien" \| "interesse" \| "afgewezen"}`: the app marks it shown, or the customer answers |
 | `GET /v1/audit` | adviseur | Last 500 audit events |
 | `GET /v1/demo` · `POST /v1/demo/volgende` · `POST /v1/demo/week {week}` · `POST /v1/demo/reset` | adviseur, only if `DEMO_MODE=true` | Demo clock: Speel af / Volgende / Reset |
 | `GET /health` | public | `{ok:true}` |
@@ -130,6 +133,21 @@ Per customer, `GET K/ecosystemen` returns one **cluster per ecosystem** the cust
 - Health partners (`helena`, `leadlife`, `kom-op-tegen-kanker`, `gevoelig: true`) are never inferred, never suggested and never feed suggestions; `PUT … {deelt:true}` on them → `422 gevoelige_partner`.
 - `PUT K/partners/:partner {deelt:true}` on a partner KBC didn't know creates the relation (`herkomst: "KLANT"`); switching that one off removes it again.
 
+### Kansen: sending a possible link to the app
+
+In the backoffice an adviser clicks a `mogelijk` link in the customer's ecosystem graph and confirms; the customer then sees it in KBC Mobile as a new opportunity. The app polls `GET K/kansen` (like the other endpoints, ~1.5 s) and shows a popup for every kans with `status: "nieuw"`:
+
+```json
+[ { "id": "kans-…", "status": "nieuw",
+    "link": { "id": "partner:de-lijn", "soort": "partner", "ref": "de-lijn", "naam": "De Lijn", "ecosysteem": "MOBILITEIT", "ecosysteemNaam": "Mobiliteit" },
+    "waarom": ["Reist met de trein"], "bericht": "Handig voor jullie dagelijkse verplaatsingen.",
+    "verstuurdOp": "2026-10-20T09:20:11.000Z", "bijgewerktOp": "2026-10-20T09:20:11.000Z" } ]
+```
+
+- `status`: `nieuw` → `gezien` (the app showed the popup) → `interesse` or `afgewezen` (the customer answered). The app sets it with `PUT K/kansen/:kansId`; the adviser sees it live. `nieuw` can't be set back.
+- `waarom` are the rule reasons in plain words, for a "Waarom zie ik dit?" line; `bericht` is the adviser's optional note (`null` if none). The adviser view adds `klantId`, `score` (at send time) and `verstuurdDoor`; customers never get those.
+- `POST` is refused with `422 geen_mogelijke_link` when the link isn't `mogelijk` for this customer right now, and `422 al_verstuurd` when it was sent before (each link once). A kans is a snapshot: it stays even if the link later becomes `actief`. Demo reset clears them.
+
 ### Demo profiles and timeline
 
 - **Tom en Lien** (`K-2024-0417`): renting in Kortrijk, expecting a baby, one electric car (loan + insurance, VAB charging card), saving for a house (€38.650) and planning to marry. Partners: Immoscoop, VAB, NMBS, Joyn share data; Cambio, Brussels Airport, De Immowinkel are known.
@@ -181,7 +199,7 @@ src/
   store.ts         in-memory state + demo clock + audit log
   auth.ts          demo users (scrypt), JWT roles, requireRole / requireKlantAccess
   app.ts           Fastify setup, security plugins, error handler, route mounting
-  routes/          auth, klanten (customer data), momenten (signals + moments + MCP share), ecosystemen (catalogue, partners, clusters), demo
+  routes/          auth, klanten (customer data), momenten (signals + moments + MCP share), ecosystemen (catalogue, partners, clusters), kansen (possible links sent to the app), demo
 ```
 
 Adding an endpoint: put it in the right `routes/*.ts`, give it a Zod `schema` (`params`/`querystring`/`body`, use `.strict()` on bodies) plus `tags` and `security: [{ bearer: [] }]`, and a `response` schema from `src/schemas.ts` (with `fouten(...)` for the error codes). Response schemas are enforced on output: fields they don't list are stripped, so update the schema when you change what a route returns. Guard it with `requireKlantAccess(...roles)` for anything under `/klanten/:klantId`, or `requireRole(...)` otherwise. Call `store.log(...)` on reads of personal data and on every write. Then run `pnpm typecheck`.

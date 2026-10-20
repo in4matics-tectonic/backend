@@ -12,6 +12,7 @@ import { config } from './config.js';
 import { authRoutes } from './routes/auth.js';
 import { demoRoutes } from './routes/demo.js';
 import { ecosysteemRoutes } from './routes/ecosystemen.js';
+import { kansRoutes } from './routes/kansen.js';
 import { klantRoutes } from './routes/klanten.js';
 import { momentRoutes } from './routes/momenten.js';
 import { AuditRegel, fouten } from './schemas.js';
@@ -66,6 +67,7 @@ export async function buildApp() {
       await v1.register(klantRoutes);
       await v1.register(momentRoutes);
       await v1.register(ecosysteemRoutes);
+      await v1.register(kansRoutes);
       if (config.DEMO_MODE) await v1.register(demoRoutes);
       v1.get(
         '/audit',
